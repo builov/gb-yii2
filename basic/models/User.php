@@ -2,9 +2,70 @@
 
 namespace app\models;
 
-class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
+use Yii;
+
+/**
+ * This is the model class for table "users".
+ *
+ * @property int $id
+ * @property string $username
+ * @property string $password
+ * @property string $authKey
+ * @property string $accessToken
+ * @property string $realfirstname
+ * @property string $reallastname
+ * @property string $email
+ * @property string $created
+ */
+class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
 {
-    public $id;
+    /**
+     * {@inheritdoc}
+     */
+    public static function tableName()
+    {
+        return 'users';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function rules()
+    {
+        return [
+            [['username', 'password', 'authKey', 'accessToken', 'realfirstname', 'reallastname', 'email'], 'required'],
+            [['created'], 'safe'],
+            [['username', 'password', 'authKey', 'accessToken', 'realfirstname', 'reallastname', 'email'], 'string', 'max' => 255],
+            [['authKey'], 'unique'],
+            [['accessToken'], 'unique'],
+            [['username'], 'unique'],
+            [['email'], 'unique'],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'username' => 'Username',
+            'password' => 'Password',
+            'authKey' => 'Auth Key',
+            'accessToken' => 'Access Token',
+            'realfirstname' => 'Realfirstname',
+            'reallastname' => 'Reallastname',
+            'email' => 'Email',
+            'created' => 'Created',
+        ];
+    }
+
+	
+//==================================================
+
+	/*
+	public $id;
     public $username;
     public $password;
     public $authKey;
@@ -26,6 +87,7 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
             'accessToken' => '101-token',
         ],
     ];
+	*/
 
 
     /**
@@ -33,7 +95,9 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      */
     public static function findIdentity($id)
     {
-        return isset(self::$users[$id]) ? new static(self::$users[$id]) : null;
+        //return isset(self::$users[$id]) ? new static(self::$users[$id]) : null;
+		
+		return static::findOne(['id' => $id]);
     }
 
     /**
@@ -41,13 +105,14 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      */
     public static function findIdentityByAccessToken($token, $type = null)
     {
-        foreach (self::$users as $user) {
+        /*foreach (self::$users as $user) {
             if ($user['accessToken'] === $token) {
                 return new static($user);
             }
         }
-
-        return null;
+        return null;*/
+		
+		return static::findOne(['accessToken' => $token]);
     }
 
     /**
@@ -58,13 +123,17 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      */
     public static function findByUsername($username)
     {
-        foreach (self::$users as $user) {
+        /*
+		foreach (self::$users as $user) {
             if (strcasecmp($user['username'], $username) === 0) {
                 return new static($user);
             }
         }
 
         return null;
+		*/
+		
+		return static::findOne(['username' => $username]);
     }
 
     /**
