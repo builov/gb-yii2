@@ -12,6 +12,9 @@ use Yii;
  * @property string $author
  * @property string $created
  * @property string $edited
+ *
+ * @property User $name
+ * @property Access[] $accesses
  */
 class Note extends \yii\db\ActiveRecord
 {
@@ -29,7 +32,7 @@ class Note extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['text', 'author'], 'required'],
+            [['text'], 'required'],
             [['text'], 'string'],
             [['created', 'edited'], 'safe'],
             [['author'], 'string', 'max' => 255],
@@ -49,4 +52,36 @@ class Note extends \yii\db\ActiveRecord
             'edited' => 'Edited',
         ];
     }
+
+    /**
+     * {@inheritdoc}
+     * @return NotesQuery the active query used by this AR class.
+     */
+    public static function find()
+    {
+        return new NotesQuery(get_called_class());
+    }
+	
+	//returns ActiveQuery
+	public function getAccess()
+	{
+		return $this->hasMany(Access::class, ['note' => 'id']);
+	}
+	
+	//returns ActiveQuery
+	public function getName()
+	{
+		return $this->hasOne(User::class, ['id' => 'author']);
+	}
+	
+	public function beforeSave($insert)
+	{
+		$result = parent::beforeSave($insert);
+		
+		if (!$this->author) {
+			$this->author = \Yii::$app->user->id;
+		}
+		
+		return $result;
+	}
 }

@@ -31,6 +31,7 @@ $this->params['breadcrumbs'][] = $this->title;
             'id',
             'user',
             'note',
+			'show_from:date'
         ],
     ]) ?>
 

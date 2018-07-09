@@ -62,7 +62,10 @@ class NoteSearch extends Note
             'id' => $this->id,
             'created' => $this->created,
             'edited' => $this->edited,
+			'access.user' => $params['user'] ?? ''
         ]);
+		
+		$query->joinWith('access');
 
         $query->andFilterWhere(['like', 'text', $this->text])
             ->andFilterWhere(['like', 'author', $this->author]);

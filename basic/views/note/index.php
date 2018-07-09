@@ -2,6 +2,8 @@
 
 use yii\helpers\Html;
 use yii\grid\GridView;
+use app\models\Access;
+use app\models\Note;
 
 /* @var $this yii\web\View */
 /* @var $searchModel app\models\NoteSearch */
@@ -27,11 +29,21 @@ $this->params['breadcrumbs'][] = $this->title;
 
             'id',
             'text:ntext',
-            'author',
+            'name.username',
             'created',
             'edited',
 
-            ['class' => 'yii\grid\ActionColumn'],
+            [
+				'class' => 'yii\grid\ActionColumn',
+				'buttons' => [
+					'update' => function ($url, Note $model) {
+						return Access::getAccessLevel($model) === Access::LEVEL_EDIT ? Html::a('Update', $url) : '';
+					},
+					'delete' => function ($url, Note $model) {
+						return Access::getAccessLevel($model) === Access::LEVEL_EDIT ? Html::a('Delete', $url) : '';
+					},
+				],
+			],
         ],
     ]); ?>
 </div>

@@ -8,6 +8,11 @@ use app\models\NoteSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\filters\AccessControl;
+use app\models\Access;
+use yii\web\ForbiddenHttpException;
+
+
 
 /**
  * NoteController implements the CRUD actions for Note model.
@@ -20,13 +25,54 @@ class NoteController extends Controller
     public function behaviors()
     {
         return [
-            'verbs' => [
+            
+			'access' => [
+				'class' => AccessControl::class,
+				'only' => ['my', 'create', 'update', 'delete', 'shared'],
+				'rules' => [
+					[
+						'roles' => ['@'],
+						'allow' => true,
+					],
+				],
+			],
+			
+			'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
                 ],
             ],
         ];
+    }
+	
+	
+	public function actionShared()
+    {
+        $searchModel = new NoteSearch();
+        $dataProvider = $searchModel->search(['user' => \Yii::$app->user->id]);
+
+        return $this->render('index', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+	
+	
+	
+	public function actionMy()
+    {
+        $searchModel = new NoteSearch();
+        $dataProvider = $searchModel->search([
+			'NoteSearch' => [
+				'author' => \Yii::$app->user->id,
+			]
+		]);
+
+        return $this->render('index', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
     }
 
     /**
@@ -52,8 +98,25 @@ class NoteController extends Controller
      */
     public function actionView($id)
     {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
+        $model = $this->findModel($id);		
+		
+		if (!$model) {			
+			throw new NotFoundHttpException('Not found');
+		}
+		
+		$level = Access::getAccessLevel($model);
+		
+		//var_dump($model);
+		//exit;
+		
+		if ($level === Access::LEVEL_DENIED) {			
+			throw new ForbiddenHttpException('No access');
+		}
+		
+		$viewName = ($level === Access::LEVEL_EDIT) ? 'view' : 'view-guest';
+		
+		return $this->render($viewName, [
+            'model' => $model,
         ]);
     }
 
@@ -85,6 +148,15 @@ class NoteController extends Controller
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
+		
+		if (!$model) {			
+			throw new NotFoundHttpException('Not found');
+		}		
+		$level = Access::getAccessLevel($model);
+		
+		if ($level !== Access::LEVEL_EDIT) {			
+			throw new ForbiddenHttpException('No access');
+		}
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             return $this->redirect(['view', 'id' => $model->id]);
@@ -103,8 +175,19 @@ class NoteController extends Controller
      * @throws NotFoundHttpException if the model cannot be found
      */
     public function actionDelete($id)
-    {
-        $this->findModel($id)->delete();
+    {		
+		$model = $this->findModel($id);
+		
+		if (!$model) {			
+			throw new NotFoundHttpException('Not found');
+		}		
+		$level = Access::getAccessLevel($model);
+		
+		if ($level !== Access::LEVEL_EDIT) {			
+			throw new ForbiddenHttpException('No access');
+		}
+		
+		$model->delete();
 
         return $this->redirect(['index']);
     }
