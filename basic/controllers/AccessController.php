@@ -8,6 +8,7 @@ use app\models\AccessSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\caching\DbDependency;
 
 /**
  * AccessController implements the CRUD actions for Access model.
@@ -51,11 +52,12 @@ class AccessController extends Controller
      * @throws NotFoundHttpException if the model cannot be found
      */
     public function actionView($id)
-    {
-        return $this->render('view', [
+    {		
+		return $this->render('view', [
             'model' => $this->findModel($id),
         ]);
     }
+	
 
     /**
      * Creates a new Access model.
@@ -118,8 +120,19 @@ class AccessController extends Controller
      */
     protected function findModel($id)
     {
-        if (($model = Access::findOne($id)) !== null) {
-            return $model;
+		$dependency = new DbDependency([
+			'sql' => 'SELECT user FROM access WHERE id = :id',
+			'params' => [
+				'id' => $id,
+			],
+		]);
+		
+		if (($model = Access::find()
+								->andWhere(['id' => $id])
+								->cache(30, $dependency)
+								->one()
+			) !== null) {
+			return $model;
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');

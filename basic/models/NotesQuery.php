@@ -20,7 +20,18 @@ class NotesQuery extends \yii\db\ActiveQuery
      */
     public function all($db = null)
     {
-        return parent::all($db);
+        $key = 'notes_list';
+		
+		$cachedResult = \Yii::$app->cache->get($key);
+		if ($cachedResult !== false) {
+			return $cachedResult;
+		}		
+		
+		$result = parent::all($db);
+		
+		\Yii::$app->cache->set($key, $result, 10);		
+		
+		return $result;
     }
 
     /**

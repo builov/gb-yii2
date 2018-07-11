@@ -23,28 +23,37 @@ class Access extends \yii\db\ActiveRecord
         $authorId = (int)$model->author;
 		$currentUserId = (int)\Yii::$app->user->id;
 		
-		
-		
 		if ($authorId === $currentUserId) {			
 			return self::LEVEL_EDIT;
 		}
 		
+		//caching begins
+		
+		$dependency = new \yii\caching\ExpressionDependency(['expression' => $currentUserId]);
+
+		$key = 'note_access_'.$model->id;
+		
+		$cachedAccessNote = \Yii::$app->cache->get($key);
+		
+		if ($cachedAccessNote !== false) {			
+			return self::LEVEL_VIEW;
+		}	
+		
 		$query = self::find()
 			->forNote($model)
 			->forUserId($currentUserId)
-			->forDate();
-			
+			->forDate();			
 		
-			
-		$accessNote = $query->one();
-			
-		//var_dump($model->id);
-		//var_dump($currentUserId);
-		//exit;
+		$accessNote = $query->one();	
 			
 		if ($accessNote) {		
+		
+			\Yii::$app->cache->set($key, $accessNote, 10, $dependency);
+			
 			return self::LEVEL_VIEW;
 		}
+		
+		//caching ends
 		
 		return self::LEVEL_DENIED;
     }
